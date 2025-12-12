@@ -536,9 +536,9 @@ const (
 type NodeTemplateMatchMethod int
 
 const (
-	NodeTemplateMatchMethodSQDIFF_NORMED NodeTemplateMatchMethod = 1 // Normalized squared difference
-	NodeTemplateMatchMethodCCORR_NORMED  NodeTemplateMatchMethod = 3 // Normalized cross correlation
-	NodeTemplateMatchMethodCCOEFF_NORMED NodeTemplateMatchMethod = 5 // Normalized correlation coefficient (default, most accurate)
+	NodeTemplateMatchMethodSQDIFF_NORMED_Inverted NodeTemplateMatchMethod = 10001 // Normalized squared difference (Inverted)
+	NodeTemplateMatchMethodCCORR_NORMED           NodeTemplateMatchMethod = 3     // Normalized cross correlation
+	NodeTemplateMatchMethodCCOEFF_NORMED          NodeTemplateMatchMethod = 5     // Normalized correlation coefficient (default, most accurate)
 )
 
 // NodeTemplateMatchParam defines parameters for template matching recognition.
@@ -918,6 +918,13 @@ func WithOCRROIOffset(offset Rect) OCROption {
 	}
 }
 
+// WithOCRExpected sets the expected text results.
+func WithOCRExpected(expected []string) OCROption {
+	return func(param *NodeOCRParam) {
+		param.Expected = expected
+	}
+}
+
 // WithOCRThreshold sets the model confidence threshold.
 func WithOCRThreshold(th float64) OCROption {
 	return func(param *NodeOCRParam) {
@@ -961,10 +968,8 @@ func WithOCRModel(model string) OCROption {
 }
 
 // RecOCR creates an OCR recognition with the given expected text patterns.
-func RecOCR(expected []string, opts ...OCROption) *NodeRecognition {
-	param := &NodeOCRParam{
-		Expected: expected,
-	}
+func RecOCR(opts ...OCROption) *NodeRecognition {
+	param := &NodeOCRParam{}
 
 	for _, opt := range opts {
 		opt(param)
@@ -1030,6 +1035,13 @@ func WithNeuralClassifyLabels(labels []string) NeuralClassifyOption {
 	}
 }
 
+// WithNeuralClassifyExpected sets the expected class indices.
+func WithNeuralClassifyExpected(expected []int) NeuralClassifyOption {
+	return func(param *NodeNeuralNetworkClassifyParam) {
+		param.Expected = expected
+	}
+}
+
 // WithNeuralClassifyOrderBy sets the result ordering method.
 func WithNeuralClassifyOrderBy(orderBy NodeNeuralNetworkClassifyOrderBy) NeuralClassifyOption {
 	return func(param *NodeNeuralNetworkClassifyParam) {
@@ -1046,10 +1058,9 @@ func WithNeuralClassifyIndex(index int) NeuralClassifyOption {
 
 // RecNeuralNetworkClassify creates a NeuralNetworkClassify recognition.
 // This classifies images at fixed positions into predefined categories.
-func RecNeuralNetworkClassify(model string, expected []int, opts ...NeuralClassifyOption) *NodeRecognition {
+func RecNeuralNetworkClassify(model string, opts ...NeuralClassifyOption) *NodeRecognition {
 	param := &NodeNeuralNetworkClassifyParam{
-		Model:    model,
-		Expected: expected,
+		Model: model,
 	}
 
 	for _, opt := range opts {
@@ -1117,6 +1128,13 @@ func WithNeuralDetectLabels(labels []string) NeuralDetectOption {
 	}
 }
 
+// WithNeuralDetectExpected sets the expected class indices.
+func WithNeuralDetectExpected(expected []int) NeuralDetectOption {
+	return func(param *NodeNeuralNetworkDetectParam) {
+		param.Expected = expected
+	}
+}
+
 // WithNeuralDetectOrderBy sets the result ordering method.
 func WithNeuralDetectOrderBy(orderBy NodeNeuralNetworkDetectOrderBy) NeuralDetectOption {
 	return func(param *NodeNeuralNetworkDetectParam) {
@@ -1133,10 +1151,9 @@ func WithNeuralDetectIndex(index int) NeuralDetectOption {
 
 // RecNeuralNetworkDetect creates a NeuralNetworkDetect recognition.
 // This detects objects at arbitrary positions using deep learning models like YOLO.
-func RecNeuralNetworkDetect(model string, expected []int, opts ...NeuralDetectOption) *NodeRecognition {
+func RecNeuralNetworkDetect(model string, opts ...NeuralDetectOption) *NodeRecognition {
 	param := &NodeNeuralNetworkDetectParam{
-		Model:    model,
-		Expected: expected,
+		Model: model,
 	}
 
 	for _, opt := range opts {
@@ -1299,6 +1316,7 @@ const (
 	NodeActionTypeStopTask     NodeActionType = "StopTask"
 	NodeActionTypeScroll       NodeActionType = "Scroll"
 	NodeActionTypeCommand      NodeActionType = "Command"
+	NodeActionTypeShell        NodeActionType = "Shell"
 	NodeActionTypeCustom       NodeActionType = "Custom"
 )
 
@@ -1979,6 +1997,20 @@ func ActCommand(exec string, opts ...CommandOption) *NodeAction {
 		opt(param)
 	}
 	return &NodeAction{Type: NodeActionTypeCommand, Param: param}
+}
+
+// NodeShellParam defines parameters for shell command execution action.
+type NodeShellParam struct {
+	Cmd string `json:"cmd,omitempty"`
+}
+
+func (n NodeShellParam) isActionParam() {}
+
+// ActShell creates a Shell action with the given command.
+// This is only valid for ADB controllers. If the controller is not an ADB controller, the action will fail.
+// The output of the command can be obtained in the action detail by MaaTaskerGetActionDetail.
+func ActShell(cmd string) *NodeAction {
+	return &NodeAction{Type: NodeActionTypeShell, Param: &NodeShellParam{Cmd: cmd}}
 }
 
 // NodeCustomActionParam defines parameters for custom action handlers.
