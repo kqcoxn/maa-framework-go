@@ -135,14 +135,9 @@ func (n *eventHandler) handleRaw(handle uintptr, msg, detailsJSON string) {
 		var detail ResourceLoadingDetail
 		_ = json.Unmarshal([]byte(detailsJSON), &detail)
 		switch s := n.sink.(type) {
-		case TaskerEventSink:
-			s.OnResourceLoading(&Tasker{handle: handle}, eventType, detail)
+
 		case ResourceEventSink:
 			s.OnResourceLoading(&Resource{handle: handle}, eventType, detail)
-		case ContextEventSink:
-			s.OnResourceLoading(&Context{handle: handle}, eventType, detail)
-		case ControllerEventSink:
-			s.OnResourceLoading(&Controller{handle: handle}, eventType, detail)
 		}
 		return
 
@@ -150,12 +145,6 @@ func (n *eventHandler) handleRaw(handle uintptr, msg, detailsJSON string) {
 		var detail ControllerActionDetail
 		_ = json.Unmarshal([]byte(detailsJSON), &detail)
 		switch s := n.sink.(type) {
-		case TaskerEventSink:
-			s.OnControllerAction(&Tasker{handle: handle}, eventType, detail)
-		case ResourceEventSink:
-			s.OnControllerAction(&Resource{handle: handle}, eventType, detail)
-		case ContextEventSink:
-			s.OnControllerAction(&Context{handle: handle}, eventType, detail)
 		case ControllerEventSink:
 			s.OnControllerAction(&Controller{handle: handle}, eventType, detail)
 		}
@@ -167,12 +156,6 @@ func (n *eventHandler) handleRaw(handle uintptr, msg, detailsJSON string) {
 		switch s := n.sink.(type) {
 		case TaskerEventSink:
 			s.OnTaskerTask(&Tasker{handle: handle}, eventType, detail)
-		case ResourceEventSink:
-			s.OnTaskerTask(&Resource{handle: handle}, eventType, detail)
-		case ContextEventSink:
-			s.OnTaskerTask(&Context{handle: handle}, eventType, detail)
-		case ControllerEventSink:
-			s.OnTaskerTask(&Controller{handle: handle}, eventType, detail)
 		}
 		return
 
@@ -180,14 +163,8 @@ func (n *eventHandler) handleRaw(handle uintptr, msg, detailsJSON string) {
 		var detail NodePipelineNodeDetail
 		_ = json.Unmarshal([]byte(detailsJSON), &detail)
 		switch s := n.sink.(type) {
-		case TaskerEventSink:
-			s.OnNodePipelineNode(&Tasker{handle: handle}, eventType, detail)
-		case ResourceEventSink:
-			s.OnNodePipelineNode(&Resource{handle: handle}, eventType, detail)
 		case ContextEventSink:
 			s.OnNodePipelineNode(&Context{handle: handle}, eventType, detail)
-		case ControllerEventSink:
-			s.OnNodePipelineNode(&Controller{handle: handle}, eventType, detail)
 		}
 		return
 
@@ -195,14 +172,8 @@ func (n *eventHandler) handleRaw(handle uintptr, msg, detailsJSON string) {
 		var detail NodeRecognitionNodeDetail
 		_ = json.Unmarshal([]byte(detailsJSON), &detail)
 		switch s := n.sink.(type) {
-		case TaskerEventSink:
-			s.OnNodeRecognitionNode(&Tasker{handle: handle}, eventType, detail)
-		case ResourceEventSink:
-			s.OnNodeRecognitionNode(&Resource{handle: handle}, eventType, detail)
 		case ContextEventSink:
 			s.OnNodeRecognitionNode(&Context{handle: handle}, eventType, detail)
-		case ControllerEventSink:
-			s.OnNodeRecognitionNode(&Controller{handle: handle}, eventType, detail)
 		}
 		return
 
@@ -210,14 +181,8 @@ func (n *eventHandler) handleRaw(handle uintptr, msg, detailsJSON string) {
 		var detail NodeActionNodeDetail
 		_ = json.Unmarshal([]byte(detailsJSON), &detail)
 		switch s := n.sink.(type) {
-		case TaskerEventSink:
-			s.OnNodeActionNode(&Tasker{handle: handle}, eventType, detail)
-		case ResourceEventSink:
-			s.OnNodeActionNode(&Resource{handle: handle}, eventType, detail)
 		case ContextEventSink:
 			s.OnNodeActionNode(&Context{handle: handle}, eventType, detail)
-		case ControllerEventSink:
-			s.OnNodeActionNode(&Controller{handle: handle}, eventType, detail)
 		}
 		return
 
@@ -225,14 +190,8 @@ func (n *eventHandler) handleRaw(handle uintptr, msg, detailsJSON string) {
 		var detail NodeNextListDetail
 		_ = json.Unmarshal([]byte(detailsJSON), &detail)
 		switch s := n.sink.(type) {
-		case TaskerEventSink:
-			s.OnTaskNextList(&Tasker{handle: handle}, eventType, detail)
-		case ResourceEventSink:
-			s.OnTaskNextList(&Resource{handle: handle}, eventType, detail)
 		case ContextEventSink:
-			s.OnTaskNextList(&Context{handle: handle}, eventType, detail)
-		case ControllerEventSink:
-			s.OnTaskNextList(&Controller{handle: handle}, eventType, detail)
+			s.OnNodeNextList(&Context{handle: handle}, eventType, detail)
 		}
 		return
 
@@ -240,14 +199,8 @@ func (n *eventHandler) handleRaw(handle uintptr, msg, detailsJSON string) {
 		var detail NodeRecognitionDetail
 		_ = json.Unmarshal([]byte(detailsJSON), &detail)
 		switch s := n.sink.(type) {
-		case TaskerEventSink:
-			s.OnTaskRecognition(&Tasker{handle: handle}, eventType, detail)
-		case ResourceEventSink:
-			s.OnTaskRecognition(&Resource{handle: handle}, eventType, detail)
 		case ContextEventSink:
-			s.OnTaskRecognition(&Context{handle: handle}, eventType, detail)
-		case ControllerEventSink:
-			s.OnTaskRecognition(&Controller{handle: handle}, eventType, detail)
+			s.OnNodeRecognition(&Context{handle: handle}, eventType, detail)
 		}
 		return
 
@@ -255,28 +208,13 @@ func (n *eventHandler) handleRaw(handle uintptr, msg, detailsJSON string) {
 		var detail NodeActionDetail
 		_ = json.Unmarshal([]byte(detailsJSON), &detail)
 		switch s := n.sink.(type) {
-		case TaskerEventSink:
-			s.OnTaskAction(&Tasker{handle: handle}, eventType, detail)
-		case ResourceEventSink:
-			s.OnTaskAction(&Resource{handle: handle}, eventType, detail)
 		case ContextEventSink:
-			s.OnTaskAction(&Context{handle: handle}, eventType, detail)
-		case ControllerEventSink:
-			s.OnTaskAction(&Controller{handle: handle}, eventType, detail)
+			s.OnNodeAction(&Context{handle: handle}, eventType, detail)
 		}
 		return
 
 	default:
-		switch s := n.sink.(type) {
-		case TaskerEventSink:
-			s.OnUnknownEvent(&Tasker{handle: handle}, msg, detailsJSON)
-		case ResourceEventSink:
-			s.OnUnknownEvent(&Resource{handle: handle}, msg, detailsJSON)
-		case ContextEventSink:
-			s.OnUnknownEvent(&Context{handle: handle}, msg, detailsJSON)
-		case ControllerEventSink:
-			s.OnUnknownEvent(&Controller{handle: handle}, msg, detailsJSON)
-		}
+		// do nothing
 	}
 }
 
