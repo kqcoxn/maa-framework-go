@@ -51,6 +51,22 @@ func NewAdbController(
 	}
 }
 
+// NewPlayCoverController creates a new PlayCover controller.
+func NewPlayCoverController(
+	address, uuid string,
+) *Controller {
+	handle := native.MaaPlayCoverControllerCreate(address, uuid)
+	if handle == 0 {
+		return nil
+	}
+
+	initControllerStore(handle)
+
+	return &Controller{
+		handle: handle,
+	}
+}
+
 // NewWin32Controller creates a win32 controller instance.
 func NewWin32Controller(
 	hWnd unsafe.Pointer,
@@ -315,4 +331,28 @@ func (c *Controller) RemoveSink(sinkId int64) {
 // ClearSinks clears all event callback sinks.
 func (c *Controller) ClearSinks() {
 	native.MaaControllerClearSinks(c.handle)
+}
+
+type ControllerEventSink interface {
+	OnControllerAction(ctrl *Controller, event EventStatus, detail ControllerActionDetail)
+}
+
+// ControllerEventSinkAdapter is a lightweight adapter that makes it easy to register
+// a single-event handler via a callback function.
+type ControllerEventSinkAdapter struct {
+	onControllerAction func(EventStatus, ControllerActionDetail)
+}
+
+func (a *ControllerEventSinkAdapter) OnControllerAction(ctrl *Controller, status EventStatus, detail ControllerActionDetail) {
+	if a == nil || a.onControllerAction == nil {
+		return
+	}
+	a.onControllerAction(status, detail)
+}
+
+// OnControllerAction registers a callback sink that only handles Controller.Action events and returns the sink ID.
+// The sink ID can be used to remove the sink later.
+func (c *Controller) OnControllerAction(fn func(EventStatus, ControllerActionDetail)) int64 {
+	sink := &ControllerEventSinkAdapter{onControllerAction: fn}
+	return c.AddSink(sink)
 }

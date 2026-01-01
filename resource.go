@@ -111,8 +111,8 @@ func (r *Resource) UseAutoExecutionProvider() bool {
 	return r.setInference(native.MaaInferenceExecutionProvider_Auto, native.MaaInferenceDevice_Auto)
 }
 
-// RegisterCustomRecognition registers a custom recognition to the resource.
-func (r *Resource) RegisterCustomRecognition(name string, recognition CustomRecognition) bool {
+// RegisterCustomRecognition registers a custom recognition runner to the resource.
+func (r *Resource) RegisterCustomRecognition(name string, recognition CustomRecognitionRunner) bool {
 	id := registerCustomRecognition(recognition)
 
 	store.ResStore.Update(r.handle, func(v *store.ResStoreValue) {
@@ -132,7 +132,7 @@ func (r *Resource) RegisterCustomRecognition(name string, recognition CustomReco
 	)
 }
 
-// UnregisterCustomRecognition unregisters a custom recognition from the resource.
+// UnregisterCustomRecognition unregisters a custom recognition runner from the resource.
 func (r *Resource) UnregisterCustomRecognition(name string) bool {
 	var found bool
 	store.ResStore.Update(r.handle, func(v *store.ResStoreValue) {
@@ -148,7 +148,7 @@ func (r *Resource) UnregisterCustomRecognition(name string) bool {
 	return native.MaaResourceUnregisterCustomRecognition(r.handle, name)
 }
 
-// ClearCustomRecognition clears all custom recognitions registered from the resource.
+// ClearCustomRecognition clears all custom recognitions runner registered from the resource.
 func (r *Resource) ClearCustomRecognition() bool {
 	store.ResStore.Update(r.handle, func(v *store.ResStoreValue) {
 		for _, id := range v.CustomRecognizersCallbackID {
@@ -160,8 +160,8 @@ func (r *Resource) ClearCustomRecognition() bool {
 	return native.MaaResourceClearCustomRecognition(r.handle)
 }
 
-// RegisterCustomAction registers a custom action to the resource.
-func (r *Resource) RegisterCustomAction(name string, action CustomAction) bool {
+// RegisterCustomAction registers a custom action runner to the resource.
+func (r *Resource) RegisterCustomAction(name string, action CustomActionRunner) bool {
 	id := registerCustomAction(action)
 
 	store.ResStore.Update(r.handle, func(v *store.ResStoreValue) {
@@ -181,7 +181,7 @@ func (r *Resource) RegisterCustomAction(name string, action CustomAction) bool {
 	)
 }
 
-// UnregisterCustomAction unregisters a custom action from the resource.
+// UnregisterCustomAction unregisters a custom action runner from the resource.
 func (r *Resource) UnregisterCustomAction(name string) bool {
 	var found bool
 	store.ResStore.Update(r.handle, func(v *store.ResStoreValue) {
@@ -197,7 +197,7 @@ func (r *Resource) UnregisterCustomAction(name string) bool {
 	return native.MaaResourceUnregisterCustomAction(r.handle, name)
 }
 
-// ClearCustomAction clears all custom actions registered from the resource.
+// ClearCustomAction clears all custom actions runners registered from the resource.
 func (r *Resource) ClearCustomAction() bool {
 	store.ResStore.Update(r.handle, func(v *store.ResStoreValue) {
 		for _, id := range v.CustomActionsCallbackID {
@@ -213,6 +213,24 @@ func (r *Resource) ClearCustomAction() bool {
 // Return id of the resource.
 func (r *Resource) PostBundle(path string) *Job {
 	id := native.MaaResourcePostBundle(r.handle, path)
+	return newJob(id, r.status, r.wait)
+}
+
+// PostOcrModel adds an OCR model to the resource loading paths.
+func (r *Resource) PostOcrModel(path string) *Job {
+	id := native.MaaResourcePostOcrModel(r.handle, path)
+	return newJob(id, r.status, r.wait)
+}
+
+// PostPipeline adds a pipeline to the resource loading paths.
+func (r *Resource) PostPipeline(path string) *Job {
+	id := native.MaaResourcePostPipeline(r.handle, path)
+	return newJob(id, r.status, r.wait)
+}
+
+// PostImage adds an image to the resource loading paths.
+func (r *Resource) PostImage(path string) *Job {
+	id := native.MaaResourcePostImage(r.handle, path)
 	return newJob(id, r.status, r.wait)
 }
 
@@ -379,4 +397,28 @@ func (r *Resource) ClearSinks() {
 	})
 
 	native.MaaResourceClearSinks(r.handle)
+}
+
+type ResourceEventSink interface {
+	OnResourceLoading(res *Resource, event EventStatus, detail ResourceLoadingDetail)
+}
+
+// ResourceEventSinkAdapter is a lightweight adapter that makes it easy to register
+// a single-event handler via a callback function.
+type ResourceEventSinkAdapter struct {
+	onResourceLoading func(EventStatus, ResourceLoadingDetail)
+}
+
+func (a *ResourceEventSinkAdapter) OnResourceLoading(res *Resource, status EventStatus, detail ResourceLoadingDetail) {
+	if a == nil || a.onResourceLoading == nil {
+		return
+	}
+	a.onResourceLoading(status, detail)
+}
+
+// OnResourceLoading registers a callback sink that only handles Resource.Loading events and returns the sink ID.
+// The sink ID can be used to remove the sink later.
+func (r *Resource) OnResourceLoading(fn func(EventStatus, ResourceLoadingDetail)) int64 {
+	sink := &ResourceEventSinkAdapter{onResourceLoading: fn}
+	return r.AddSink(sink)
 }
